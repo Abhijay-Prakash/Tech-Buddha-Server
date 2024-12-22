@@ -11,7 +11,7 @@ exports.s3UploadV3 = async (buffer, fileName) => {
     const contentType = mime.lookup(fileName) || "application/octet-stream";
 
     const params = {
-        Bucket: process.env.AWS_BUCKET_NAME,
+        Bucket: process.env.aws_BUCKET_NAME,
         Key: uniqueFileName,
         Body: buffer,
         ContentType: contentType,
@@ -21,7 +21,7 @@ exports.s3UploadV3 = async (buffer, fileName) => {
         await s3client.send(new PutObjectCommand(params));
 
 
-        const objectUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${uniqueFileName}`;
+        const objectUrl = `https://${process.env.aws_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${uniqueFileName}`;
         return { objectUrl, key: uniqueFileName };
     } catch (error) {
         console.error("Error uploading file to S3:", error);
