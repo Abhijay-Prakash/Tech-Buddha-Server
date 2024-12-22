@@ -42,7 +42,7 @@ const upload = multer({
     { name: "certificates", maxCount: 3 },
 ]);
 
-app.post("/upload", upload, async (req, res) => {
+app.post("https://tech-buddha-server.onrender.com/upload", upload, async (req, res) => {
     try {
         const { fullname, collegename, currentPositions, year, testimonials } = req.body;
 
@@ -94,7 +94,7 @@ app.post("/upload", upload, async (req, res) => {
 
 
 
-app.get("/users", async (req, res) => {
+app.get("https://tech-buddha-server-1.onrender.com/users", async (req, res) => {
     try {
         const { collegename, year } = req.query;
 
