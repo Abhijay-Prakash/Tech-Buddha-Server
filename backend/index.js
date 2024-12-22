@@ -9,6 +9,13 @@ app.use(express.json());
 
 
 
+mongoose.connect(process.env.MONGO_DB_URI)
+    .then(() => console.log("Connected to MongoDB"))
+    .catch(err => {
+        console.error("Error connecting to MongoDB Atlas:", err);
+        process.exit(1);
+    });
+
 
 const userSchema = new mongoose.Schema({
     fullname: String,
@@ -19,16 +26,7 @@ const userSchema = new mongoose.Schema({
     testimonials: [String],
     certificateUrls: [String],
 });
-
-
-
 const User = mongoose.model("User", userSchema);
-
-
-
-mongoose.connect(process.env.MONGO_DB_URI)
-    .then(() => console.log("Connected to Mong0DB"))
-    .catch(err => console.error("Error connecting to MongoDB Atlas:", err));
 
 
 
@@ -37,28 +35,27 @@ mongoose.connect(process.env.MONGO_DB_URI)
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB limit
 }).fields([
-    { name: "image", maxCount: 1 }, // Single image
+    { name: "image", maxCount: 1 },
     { name: "certificates", maxCount: 3 },
 ]);
 
-app.post("https://tech-buddha-server-1.onrender.com/upload", upload, async (req, res) => {
+
+app.post("/upload", upload, async (req, res) => {
     try {
         const { fullname, collegename, currentPositions, year, testimonials } = req.body;
 
-
         if (!fullname || !collegename || !currentPositions || !year || !req.files || !req.files.image) {
-            return res.status(400).json({ error: "All fields and image are required" });
+            return res.status(400).json({ success: false, error: "All fields and image are required" });
         }
 
-        const positionsArray = JSON.parse(currentPositions);
-        const testimonialsArray = JSON.parse(testimonials);
-
+        const positionsArray = Array.isArray(currentPositions) ? currentPositions : JSON.parse(currentPositions);
+        const testimonialsArray = Array.isArray(testimonials) ? testimonials : JSON.parse(testimonials);
 
         const imageBuffer = req.files.image[0].buffer;
         const imageName = req.files.image[0].originalname;
         const { objectUrl: imageUrl } = await s3UploadV3(imageBuffer, imageName);
-
 
         const certificateUrls = [];
         if (req.files.certificates) {
@@ -68,7 +65,6 @@ app.post("https://tech-buddha-server-1.onrender.com/upload", upload, async (req,
                 certificateUrls.push(objectUrl);
             }
         }
-
 
         const user = new User({
             fullname,
@@ -81,26 +77,20 @@ app.post("https://tech-buddha-server-1.onrender.com/upload", upload, async (req,
         });
 
         const savedUser = await user.save();
-
-        res.json({
-            message: "Data uplo0ded successfully",
-            data: savedUser,
-        });
+        res.status(201).json({ success: true, message: "Data uploaded successfully", data: savedUser });
     } catch (err) {
         console.error("Error:", err);
-        res.status(500).json({ error: "Internal Server Error" });
+        res.status(500).json({ success: false, error: "Internal Server Error" });
     }
 });
 
 
-
-app.get("https://tech-buddha-server-1.onrender.com/users", async (req, res) => {
+app.get("/users", async (req, res) => {
     try {
         const { collegename, year } = req.query;
 
-
         if (!collegename || !year) {
-            return res.status(400).json({ error: "College name and year are required" });
+            return res.status(400).json({ success: false, error: "College name and year are required" });
         }
 
         const users = await User.find({
@@ -108,21 +98,17 @@ app.get("https://tech-buddha-server-1.onrender.com/users", async (req, res) => {
             year: { $in: [year] },
         });
 
-
         if (users.length === 0) {
-            return res.status(404).json({ message: "No records found for the provided criteria" });
+            return res.status(404).json({ success: false, message: "No records found for the provided criteria" });
         }
 
-        res.json({
-            message: "Records fetched successfully",
-            data: users,
-        });
+        res.status(200).json({ success: true, message: "Records fetched successfully", data: users });
     } catch (error) {
         console.error("Error fetching records:", error);
-        res.status(500).json({ error: "Internal Server Error" });
+        res.status(500).json({ success: false, error: "Internal Server Error" });
     }
 });
 
 
-
-app.listen(4000, () => console.log("Listenting to port 4000"));
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
