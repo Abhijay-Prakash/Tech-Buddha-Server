@@ -3,9 +3,15 @@ const express = require("express");
 const multer = require("multer");
 const mongoose = require("mongoose");
 const { s3UploadV3 } = require("./s3Service");
+const cors = require('cors');
+
 
 const app = express();
 app.use(express.json());
+
+app.use(cors({
+    origin: 'http://localhost:5173'  
+  }));
 
 
 
