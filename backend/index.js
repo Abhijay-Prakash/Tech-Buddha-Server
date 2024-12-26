@@ -5,15 +5,12 @@ const mongoose = require("mongoose");
 const { s3UploadV3 } = require("./s3Service");
 const cors = require('cors');
 
-
 const app = express();
 app.use(express.json());
 
 app.use(cors({
     origin: 'http://localhost:5173'  
-  }));
-
-
+}));
 
 mongoose.connect(process.env.MONGO_DB_URI)
     .then(() => console.log("Connected to MongoDB"))
@@ -22,42 +19,49 @@ mongoose.connect(process.env.MONGO_DB_URI)
         process.exit(1);
     });
 
-
 const userSchema = new mongoose.Schema({
     fullname: String,
+    userType: { 
+        type: String, 
+        enum: ["college", "job", "marketing", "development"], 
+        required: true 
+    },
     collegename: String,
     currentPositions: [String],
     imageUrl: String,
     year: [String],
     testimonials: [String],
     certificateUrls: [String],
+    skills: [String], 
 });
 const User = mongoose.model("User", userSchema);
-
-
-
-
 
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB limit
+    limits: { fileSize: 10 * 1024 * 1024 }, 
 }).fields([
     { name: "image", maxCount: 1 },
     { name: "certificates", maxCount: 3 },
 ]);
 
-
 app.post("/upload", upload, async (req, res) => {
     try {
-        const { fullname, collegename, currentPositions, year, testimonials } = req.body;
 
-        if (!fullname || !collegename || !currentPositions || !year || !req.files || !req.files.image) {
-            return res.status(400).json({ success: false, error: "All fields and image are required" });
+        const { fullname, userType, collegename, currentPositions, year, testimonials, skills } = req.body;
+
+        if (!fullname || !userType || !currentPositions || !req.files || !req.files.image) {
+
+            return res.status(400).json({ success: false, error: "Required fields and image are missing" });
+        }
+
+        if (!["college", "job", "marketing", "development"].includes(userType)) {
+            return res.status(400).json({ success: false, error: "Invalid userType" });
         }
 
         const positionsArray = Array.isArray(currentPositions) ? currentPositions : JSON.parse(currentPositions);
         const testimonialsArray = Array.isArray(testimonials) ? testimonials : JSON.parse(testimonials);
+        const skillsArray = skills ? (Array.isArray(skills) ? skills : JSON.parse(skills)) : [];
 
         const imageBuffer = req.files.image[0].buffer;
         const imageName = req.files.image[0].originalname;
@@ -74,12 +78,14 @@ app.post("/upload", upload, async (req, res) => {
 
         const user = new User({
             fullname,
-            collegename,
+            userType,
+            collegename: userType === "college" ? collegename : null,
             currentPositions: positionsArray,
             imageUrl,
-            year,
+            year: userType === "college" ? year : null,
             testimonials: testimonialsArray,
             certificateUrls,
+            skills: userType === "job" || userType === "development" ? skillsArray : null,
         });
 
         const savedUser = await user.save();
@@ -90,27 +96,92 @@ app.post("/upload", upload, async (req, res) => {
     }
 });
 
+// app.get("/members", async (req, res) => {
+//     try {
+//         const users = await User.find({});
+//         res.json(users);
+//     } catch (err) {
+//         console.error("Error fetching members:", err);
+//         res.status(500).json({ success: false, error: "Internal Server Error" });
+//     }
+// });
 
-app.get("/users", async (req, res) => {
+
+
+// Fetch all members
+app.get("/members", async (req, res) => {
     try {
-        const { collegename, year } = req.query;
+        const users = await User.find({});
+        res.json(users);
+    } catch (err) {
+        console.error("Error fetching members:", err);
+        res.status(500).json({ success: false, error: "Internal Server Error" });
+    }
+});
 
-        if (!collegename || !year) {
-            return res.status(400).json({ success: false, error: "College name and year are required" });
-        }
+// Fetch college members
+app.get("/members/college", async (req, res) => {
+    try {
+        const collegeUsers = await User.find({ userType: "college" });
+        const formattedUsers = collegeUsers.map(user => ({
+            fullname: user.fullname,
+            collegename: user.collegename,
+            year: user.year,
+            imageUrl: user.imageUrl,
+        }));
+        res.json(formattedUsers);
+    } catch (err) {
+        console.error("Error fetching college members:", err);
+        res.status(500).json({ success: false, error: "Internal Server Error" });
+    }
+});
 
-        const users = await User.find({
-            collegename,
-            year: { $in: [year] },
-        });
+// Fetch job members
+app.get("/members/job", async (req, res) => {
+    try {
+        const jobUsers = await User.find({ userType: "job" });
+        const formattedUsers = jobUsers.map(user => ({
+            fullname: user.fullname,
+            currentPositions: user.currentPositions,
+            skills: user.skills,
+            imageUrl: user.imageUrl,
+        }));
+        res.json(formattedUsers);
+    } catch (err) {
+        console.error("Error fetching job members:", err);
+        res.status(500).json({ success: false, error: "Internal Server Error" });
+    }
+});
 
-        if (users.length === 0) {
-            return res.status(404).json({ success: false, message: "No records found for the provided criteria" });
-        }
+// Fetch marketing members
+app.get("/members/marketing", async (req, res) => {
+    try {
+        const marketingUsers = await User.find({ userType: "marketing" });
+        const formattedUsers = marketingUsers.map(user => ({
+            fullname: user.fullname,
+            testimonials: user.testimonials,
+            imageUrl: user.imageUrl,
+        }));
+        res.json(formattedUsers);
+    } catch (err) {
+        console.error("Error fetching marketing members:", err);
+        res.status(500).json({ success: false, error: "Internal Server Error" });
+    }
+});
 
-        res.status(200).json({ success: true, message: "Records fetched successfully", data: users });
-    } catch (error) {
-        console.error("Error fetching records:", error);
+// Fetch development members
+app.get("/members/development", async (req, res) => {
+    try {
+        const developmentUsers = await User.find({ userType: "development" });
+        const formattedUsers = developmentUsers.map(user => ({
+            fullname: user.fullname,
+            skills: user.skills,
+            certificateUrls: user.certificateUrls,
+            imageUrl: user.imageUrl,
+        }));
+        res.json(formattedUsers);
+    } catch (err) {
+        console.error("Error fetching development members:", err);
         res.status(500).json({ success: false, error: "Internal Server Error" });
     }
 });
