@@ -9,8 +9,11 @@ const app = express();
 app.use(express.json());
 
 app.use(cors({
-    origin: ['http://localhost:5173', 'https://tech-buddhaa.vercel.app',
-'https://Www.lenienttree.com'], // Allowed origins
+     origin: [
+        'http://localhost:5173', 
+        'https://tech-buddhaa.vercel.app', 
+        'https://www.lenienttree.com'
+    ], // Allowed origins
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
     credentials: true, // If you need cookies or auth headers
   }));
