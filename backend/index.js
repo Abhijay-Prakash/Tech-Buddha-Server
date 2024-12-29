@@ -13,10 +13,10 @@ app.use(cors({
         'http://localhost:5173', 
         'https://tech-buddhaa.vercel.app', 
         'https://www.lenienttree.com'
-    ], // Allowed origins
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
-    credentials: true, // If you need cookies or auth headers
-  }));
+    ], 
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
+}));
   
 mongoose.connect(process.env.MONGO_DB_URI)
     .then(() => console.log("Connected to MongoDB"))
@@ -38,7 +38,10 @@ const userSchema = new mongoose.Schema({
     year: [String],
     testimonials: [String],
     certificateUrls: [String],
-    skills: [String], 
+    skills: [String],
+    linkedinUrl: String,  
+    quote: String,        
+    quoteAuthor: String   
 });
 const User = mongoose.model("User", userSchema);
 
@@ -53,11 +56,20 @@ const upload = multer({
 
 app.post("/upload", upload, async (req, res) => {
     try {
-
-        const { fullname, userType, collegename, currentPositions, year, testimonials, skills } = req.body;
+        const { 
+            fullname, 
+            userType, 
+            collegename, 
+            currentPositions, 
+            year, 
+            testimonials, 
+            skills,
+            linkedinUrl,   
+            quote,         
+            quoteAuthor    
+        } = req.body;
 
         if (!fullname || !userType || !currentPositions || !req.files || !req.files.image) {
-
             return res.status(400).json({ success: false, error: "Required fields and image are missing" });
         }
 
@@ -92,6 +104,9 @@ app.post("/upload", upload, async (req, res) => {
             testimonials: testimonialsArray,
             certificateUrls,
             skills: userType === "job" || userType === "development" ? skillsArray : null,
+            linkedinUrl,   
+            quote,         
+            quoteAuthor    
         });
 
         const savedUser = await user.save();
@@ -102,19 +117,6 @@ app.post("/upload", upload, async (req, res) => {
     }
 });
 
-// app.get("/members", async (req, res) => {
-//     try {
-//         const users = await User.find({});
-//         res.json(users);
-//     } catch (err) {
-//         console.error("Error fetching members:", err);
-//         res.status(500).json({ success: false, error: "Internal Server Error" });
-//     }
-// });
-
-
-
-// Fetch all members
 app.get("/members", async (req, res) => {
     try {
         const users = await User.find({});
@@ -125,7 +127,6 @@ app.get("/members", async (req, res) => {
     }
 });
 
-// Fetch college members
 app.get("/members/college", async (req, res) => {
     try {
         const collegeUsers = await User.find({ userType: "college" });
@@ -134,6 +135,9 @@ app.get("/members/college", async (req, res) => {
             collegename: user.collegename,
             year: user.year,
             imageUrl: user.imageUrl,
+            linkedinUrl: user.linkedinUrl,  
+            quote: user.quote,              
+            quoteAuthor: user.quoteAuthor   
         }));
         res.json(formattedUsers);
     } catch (err) {
@@ -142,7 +146,6 @@ app.get("/members/college", async (req, res) => {
     }
 });
 
-// Fetch job members
 app.get("/members/job", async (req, res) => {
     try {
         const jobUsers = await User.find({ userType: "job" });
@@ -151,6 +154,9 @@ app.get("/members/job", async (req, res) => {
             currentPositions: user.currentPositions,
             skills: user.skills,
             imageUrl: user.imageUrl,
+            linkedinUrl: user.linkedinUrl, 
+            quote: user.quote,             
+            quoteAuthor: user.quoteAuthor  
         }));
         res.json(formattedUsers);
     } catch (err) {
@@ -159,7 +165,6 @@ app.get("/members/job", async (req, res) => {
     }
 });
 
-// Fetch marketing members
 app.get("/members/marketing", async (req, res) => {
     try {
         const marketingUsers = await User.find({ userType: "marketing" });
@@ -167,6 +172,9 @@ app.get("/members/marketing", async (req, res) => {
             fullname: user.fullname,
             testimonials: user.testimonials,
             imageUrl: user.imageUrl,
+            linkedinUrl: user.linkedinUrl,  
+            quote: user.quote,              
+            quoteAuthor: user.quoteAuthor   
         }));
         res.json(formattedUsers);
     } catch (err) {
@@ -175,7 +183,6 @@ app.get("/members/marketing", async (req, res) => {
     }
 });
 
-// Fetch development members
 app.get("/members/development", async (req, res) => {
     try {
         const developmentUsers = await User.find({ userType: "development" });
@@ -184,6 +191,9 @@ app.get("/members/development", async (req, res) => {
             skills: user.skills,
             certificateUrls: user.certificateUrls,
             imageUrl: user.imageUrl,
+            linkedinUrl: user.linkedinUrl,  
+            quote: user.quote,              
+            quoteAuthor: user.quoteAuthor   
         }));
         res.json(formattedUsers);
     } catch (err) {
@@ -192,17 +202,12 @@ app.get("/members/development", async (req, res) => {
     }
 });
 
-
-
-
 app.get("/members/:slug", async (req, res) => {
     try {
         const slug = req.params.slug;
         const members = await User.find({});
 
-
         const member = members.find(m => {
-            
             const memberSlug = m.fullname.toLowerCase()
                 .replace(/\s+/g, "-")    
                 .replace(/\./g, "")      
@@ -228,7 +233,10 @@ app.get("/members/:slug", async (req, res) => {
             testimonials: member.testimonials || [],
             certificateUrls: member.certificateUrls || [],
             collegename: member.collegename,
-            year: member.year
+            year: member.year,
+            linkedinUrl: member.linkedinUrl,  
+            quote: member.quote,              
+            quoteAuthor: member.quoteAuthor   
         };
 
         res.json({ success: true, data: formattedResponse });
