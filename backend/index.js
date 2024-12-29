@@ -199,14 +199,23 @@ app.get("/members/:slug", async (req, res) => {
     try {
         const slug = req.params.slug;
         const members = await User.find({});
-        const member = members.find(m => 
-            m.fullname.toLowerCase().replace(/\s+/g, "-") === slug
-        );
+
+
+        const member = members.find(m => {
+            
+            const memberSlug = m.fullname.toLowerCase()
+                .replace(/\s+/g, "-")    
+                .replace(/\./g, "")      
+                .normalize("NFD")        
+                .replace(/[\u0300-\u036f]/g, ""); 
+
+            return memberSlug === slug;
+        });
 
         if (!member) {
-            return res.status(404).json({ 
-                success: false, 
-                error: "Member not found" 
+            return res.status(404).json({
+                success: false,
+                error: "Member not found"
             });
         }
 
@@ -224,10 +233,9 @@ app.get("/members/:slug", async (req, res) => {
 
         res.json({ success: true, data: formattedResponse });
     } catch (err) {
-        console.error("Error fetching member details:", err);
-        res.status(500).json({ 
-            success: false, 
-            error: "Internal Server Error" 
+        res.status(500).json({
+            success: false,
+            error: "Internal Server Error"
         });
     }
 });
