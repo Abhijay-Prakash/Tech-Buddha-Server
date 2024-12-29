@@ -36,6 +36,7 @@ const userSchema = new mongoose.Schema({
     currentPositions: [String],
     imageUrl: String,
     year: [String],
+    cgpa: { type: Number, min: 0, max: 10 },  
     testimonials: [String],
     certificateUrls: [String],
     skills: [String],
@@ -62,6 +63,7 @@ app.post("/upload", upload, async (req, res) => {
             collegename, 
             currentPositions, 
             year, 
+            cgpa,  // Added CGPA
             testimonials, 
             skills,
             linkedinUrl,   
@@ -75,6 +77,14 @@ app.post("/upload", upload, async (req, res) => {
 
         if (!["college", "job", "marketing", "development"].includes(userType)) {
             return res.status(400).json({ success: false, error: "Invalid userType" });
+        }
+
+        // Validate CGPA if provided for college students
+        if (userType === "college" && cgpa !== undefined) {
+            const cgpaNum = parseFloat(cgpa);
+            if (isNaN(cgpaNum) || cgpaNum < 0 || cgpaNum > 10) {
+                return res.status(400).json({ success: false, error: "CGPA must be a number between 0 and 10" });
+            }
         }
 
         const positionsArray = Array.isArray(currentPositions) ? currentPositions : JSON.parse(currentPositions);
@@ -101,6 +111,7 @@ app.post("/upload", upload, async (req, res) => {
             currentPositions: positionsArray,
             imageUrl,
             year: userType === "college" ? year : null,
+            cgpa: userType === "college" ? parseFloat(cgpa) : null,  // Added CGPA
             testimonials: testimonialsArray,
             certificateUrls,
             skills: userType === "job" || userType === "development" ? skillsArray : null,
@@ -134,6 +145,7 @@ app.get("/members/college", async (req, res) => {
             fullname: user.fullname,
             collegename: user.collegename,
             year: user.year,
+            cgpa: user.cgpa,  // Added CGPA
             imageUrl: user.imageUrl,
             linkedinUrl: user.linkedinUrl,  
             quote: user.quote,              
@@ -234,6 +246,7 @@ app.get("/members/:slug", async (req, res) => {
             certificateUrls: member.certificateUrls || [],
             collegename: member.collegename,
             year: member.year,
+            cgpa: member.cgpa,  
             linkedinUrl: member.linkedinUrl,  
             quote: member.quote,              
             quoteAuthor: member.quoteAuthor   
