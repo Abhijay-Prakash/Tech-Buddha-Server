@@ -227,56 +227,6 @@ app.get("/members/development", async (req, res) => {
     }
 });
 
-// app.get("/members/:slug", async (req, res) => {
-//     try {
-//         const slug = req.params.slug;
-//         const members = await User.find({});
-
-//         const member = members.find(m => {
-//             const memberSlug = m.fullname.toLowerCase()
-//                 .replace(/\s+/g, "-")
-//                 .replace(/\./g, "")
-//                 .normalize("NFD")
-//                 .replace(/[\u0300-\u036f]/g, "");
-
-//             return memberSlug === slug;
-//         });
-
-//         if (!member) {
-//             return res.status(404).json({
-//                 success: false,
-//                 error: "Member not found"
-//             });
-//         }
-
-//         const formattedResponse = {
-//             fullname: member.fullname,
-//             imageUrl: member.imageUrl,
-//             userType: member.userType,
-//             currentPositions: member.currentPositions || [],
-//             currentRoles: member.currentRoles || [],
-//             skills: member.skills || [],
-//             testimonials: member.testimonials || [],
-//             certificateUrls: member.certificateUrls || [],
-//             collegename: member.collegename,
-//             position: member.position,
-//             year: member.year,
-//             cgpa: member.cgpa,
-//             portfolioUrl: member.portfolioUrl,
-//             linkedinUrl: member.linkedinUrl,
-//             quotes: member.quotes || []
-//         };
-
-//         res.json({ success: true, data: formattedResponse });
-//     } catch (err) {
-//         res.status(500).json({
-//             success: false,
-//             error: "Internal Server Error"
-//         });
-//     }
-// });
-
-
 
 app.get("/members/:slug", async (req, res) => {
     try {
