@@ -184,7 +184,7 @@ app.get("/members/development", async (req, res) => {
 
 app.post("/achievements", upload, async (req, res) => {
     try {
-        const { name } = req.body;
+        const { name, date } = req.body;
 
         if (!name || !req.files || !req.files.image) {
             return res.status(400).json({ success: false, error: "Name and images are required" });
