@@ -13,10 +13,19 @@ const Achievement = require('./models/achievementsModel');
 const app = express();
 app.use(express.json());
 
+
+
 app.use(cors({
-    origin: ['http://localhost:5173', 'https://tech-buddhaa.vercel.app'], // Allowed origins
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
-    credentials: true, // If you need cookies or auth headers
+    origin: [
+       'http://localhost:5173', 
+       'https://tech-buddhaa.vercel.app', 
+       'https://www.lenienttree.com'
+   ], 
+   methods: ['GET', 'POST', 'PUT', 'DELETE'],
+   credentials: true,
+   origin: ['http://localhost:5173', 'https://tech-buddhaa.vercel.app'], // Allowed origins
+   methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
+   credentials: true, // If you need cookies or auth headers
 }));
 
 connectToMongoDB();
