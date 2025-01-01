@@ -9,6 +9,9 @@ const achievementSchema = new mongoose.Schema({
         type: [String],
         required: true,
     },
+    date:{
+        type:Date
+    }
 });
 
 const Achievement = mongoose.model("Achievement", achievementSchema);

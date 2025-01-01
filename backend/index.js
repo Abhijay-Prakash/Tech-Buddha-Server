@@ -182,7 +182,6 @@ app.get("/members/development", async (req, res) => {
 });
 
 
-// Add achievements to main section
 app.post("/achievements", upload, async (req, res) => {
     try {
         const { name } = req.body;
@@ -194,13 +193,14 @@ app.post("/achievements", upload, async (req, res) => {
         const imageUrls = [];
         for (const file of req.files.image) {
             const { buffer, originalname } = file;
-            const { objectUrl } = await s3UploadV3(buffer, originalname); // Uploading images to S3
+            const { objectUrl } = await s3UploadV3(buffer, originalname); 
             imageUrls.push(objectUrl);
         }
 
         const achievement = new Achievement({
             name,
             imageUrls,
+            date
         });
 
         const savedAchievement = await achievement.save();
