@@ -284,5 +284,75 @@ app.get("/members/:slug", async (req, res) => {
     }
 });
 
+
+app.put("/members/:slug", upload, async (req, res) => {
+    try {
+        const { slug } = req.params;
+        const members = await User.find({});
+        
+        const member = members.find(m => {
+            const memberSlug = m.fullname.toLowerCase()
+                .replace(/\s+/g, "-")
+                .replace(/\./g, "")
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "");
+            return memberSlug === slug;
+        });
+
+        if (!member) {
+            return res.status(404).json({
+                success: false,
+                error: "Member not found"
+            });
+        }
+
+        const updates = {};
+        const fields = [
+            'fullname', 'userType', 'collegename', 'position', 'year', 
+            'cgpa', 'portfolioUrl', 'linkedinUrl'
+        ];
+
+        fields.forEach(field => {
+            if (req.body[field]) {
+                updates[field] = req.body[field];
+            }
+        });
+
+        if (req.body.currentPositions) {
+            updates.currentPositions = JSON.parse(req.body.currentPositions);
+        }
+        if (req.body.currentRoles) {
+            updates.currentRoles = JSON.parse(req.body.currentRoles);
+        }
+        if (req.body.testimonials) {
+            updates.testimonials = JSON.parse(req.body.testimonials);
+        }
+        if (req.body.skills) {
+            updates.skills = JSON.parse(req.body.skills);
+        }
+        if (req.body.quotes) {
+            updates.quotes = JSON.parse(req.body.quotes);
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            member._id,
+            { $set: updates },
+            { new: true }
+        );
+
+        res.json({
+            success: true,
+            message: "User updated successfully",
+            data: updatedUser
+        });
+    } catch (error) {
+        console.error("Error updating user:", error);
+        res.status(500).json({
+            success: false,
+            error: "Internal Server Error"
+        });
+    }
+});
+
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
