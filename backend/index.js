@@ -288,17 +288,10 @@ app.get("/members/:slug", async (req, res) => {
 
 app.delete("/members/:slug", async (req, res) => {
     try {
-        const { slug } = req.params;
-        const members = await User.find({});
+        const { id } = req.params;
+        const member = await User.find({id});
         
-        const member = members.find(m => {
-            const memberSlug = m.fullname.toLowerCase()
-                .replace(/\s+/g, "-")
-                .replace(/\./g, "")
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "");
-            return memberSlug === slug;
-        });
+       
 
         if (!member) {
             return res.status(404).json({
@@ -307,7 +300,7 @@ app.delete("/members/:slug", async (req, res) => {
             });
         }
 
-        await User.findByIdAndDelete(member._id);
+        await User.findByIdAndDelete(member);
 
         res.json({
             success: true,
