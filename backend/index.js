@@ -315,6 +315,8 @@ app.delete("/members/:slug", async (req, res) => {
     }
 });
 
+
+
 app.put("/members/:slug", upload, async (req, res) => {
     try {
         const { slug } = req.params;
@@ -384,5 +386,57 @@ app.put("/members/:slug", upload, async (req, res) => {
     }
 });
 
+
+
+
+app.put("/achievements/:id", upload, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, date } = req.body;
+
+        const updates = { name, date };
+        
+        if (req.files && req.files.image) {
+            const imageUrls = [];
+            for (const file of req.files.image) {
+                const { buffer, originalname } = file;
+                const { objectUrl } = await s3UploadV3(buffer, originalname);
+                imageUrls.push(objectUrl);
+            }
+            updates.imageUrls = imageUrls;
+        }
+
+        const updatedAchievement = await Achievement.findByIdAndUpdate(
+            id,
+            updates,
+            { new: true }
+        );
+
+        if (!updatedAchievement) {
+            return res.status(404).json({ success: false, error: "Achievement not found" });
+        }
+
+        res.json({ success: true, data: updatedAchievement });
+    } catch (err) {
+        console.error("Error updating achievement:", err);
+        res.status(500).json({ success: false, error: "Internal Server Error" });
+    }
+});
+
+app.delete("/achievements/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const achievement = await Achievement.findByIdAndDelete(id);
+        
+        if (!achievement) {
+            return res.status(404).json({ success: false, error: "Achievement not found" });
+        }
+
+        res.json({ success: true, message: "Achievement deleted successfully" });
+    } catch (err) {
+        console.error("Error deleting achievement:", err);
+        res.status(500).json({ success: false, error: "Internal Server Error" });
+    }
+});
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
