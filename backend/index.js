@@ -285,6 +285,43 @@ app.get("/members/:slug", async (req, res) => {
 });
 
 
+
+app.delete("/members/:slug", async (req, res) => {
+    try {
+        const { slug } = req.params;
+        const members = await User.find({});
+        
+        const member = members.find(m => {
+            const memberSlug = m.fullname.toLowerCase()
+                .replace(/\s+/g, "-")
+                .replace(/\./g, "")
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "");
+            return memberSlug === slug;
+        });
+
+        if (!member) {
+            return res.status(404).json({
+                success: false,
+                error: "Member not found"
+            });
+        }
+
+        await User.findByIdAndDelete(member._id);
+
+        res.json({
+            success: true,
+            message: "User deleted successfully"
+        });
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        res.status(500).json({
+            success: false,
+            error: "Internal Server Error"
+        });
+    }
+});
+
 app.put("/members/:slug", upload, async (req, res) => {
     try {
         const { slug } = req.params;
