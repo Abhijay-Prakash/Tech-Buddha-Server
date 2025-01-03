@@ -286,13 +286,12 @@ app.get("/members/:slug", async (req, res) => {
 
 
 
-app.delete("/members/:slug", async (req, res) => {
+app.delete("/members/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        const member = await User.find({id});
         
-       
-
+        const member = await User.findById(id);
+        
         if (!member) {
             return res.status(404).json({
                 success: false,
@@ -300,7 +299,7 @@ app.delete("/members/:slug", async (req, res) => {
             });
         }
 
-        await User.findByIdAndDelete(member);
+        await User.findByIdAndDelete(id);
 
         res.json({
             success: true,
@@ -314,7 +313,6 @@ app.delete("/members/:slug", async (req, res) => {
         });
     }
 });
-
 
 
 app.put("/members/:slug", upload, async (req, res) => {
