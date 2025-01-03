@@ -109,7 +109,7 @@ app.post("/upload", upload, async (req, res) => {
         console.error("Error:", err);
         res.status(500).json({
             success: false,
-            error: "Internal Server Error"
+            error: err.message || "Internal Server Error"
         });
     }
 });
@@ -123,6 +123,7 @@ app.get("/members", async (req, res) => {
         res.status(500).json({ success: false, error: "Internal Server Error" });
     }
 });
+
 
 app.get("/members/college", async (req, res) => {
     try {
