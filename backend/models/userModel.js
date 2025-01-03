@@ -1,46 +1,40 @@
 const mongoose = require('mongoose');
 
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_DB_URI)
+    .then(() => console.log("Connected to MongoDB"))
+    .catch(err => {
+        console.error("Error connecting to MongoDB Atlas:", err);
+        process.exit(1);
+    });
+
+// Define the User schema
 const userSchema = new mongoose.Schema({
-    fullname: {
-        type: String,
-        required: true,
-    },
+    fullname: { type: String, required: true },
     userType: {
         type: String,
         enum: ["college", "job", "marketing", "development"],
-        required: true,
+        required: true
     },
-    collegename: {
-        type: String,
-        default: null,
+    collegename: String,
+    position: String,
+    currentPositions: [String],
+    currentRoles: [String],
+    imageUrl: String,
+    year: String,
+    cgpa: {
+        type: Number,
+        min: 0,
+        max: 10
     },
-    currentPositions: {
-        type: [String],
-        default: [],
-    },
-    imageUrl: {
-        type: String,
-        default: null,
-    },
-    year: {
-        type: [String],
-        default: [],
-    },
-    testimonials: {
-        type: [String],
-        default: [],
-    },
-    certificateUrls: {
-        type: [String],
-        default: [],
-    },
-    
-    skills: {
-        type: [String],
-        default: [],
-    },
+    testimonials: [String],
+    certificateUrls: [String],
+    skills: [String],
+    portfolioUrl: String,
+    linkedinUrl: String,
 });
 
-const User = mongoose.model("User", userSchema);
+
+const User = mongoose.model('User', userSchema);
 
 module.exports = User;

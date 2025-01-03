@@ -17,12 +17,12 @@ app.use(express.json());
 
 app.use(cors({
     origin: [
-       'http://localhost:5173', 
-       'https://tech-buddhaa.vercel.app', 
-       'https://www.lenienttree.com'
-   ], 
-   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-   credentials: true,
+        'http://localhost:5173',
+        'https://tech-buddhaa.vercel.app',
+        'https://www.lenienttree.com'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
 }));
 
 connectToMongoDB();
@@ -43,9 +43,22 @@ const upload = multer({
 app.post("/upload", upload, async (req, res) => {
     try {
 
-        const { fullname, userType, collegename, currentPositions, year, testimonials, skills } = req.body;
+        const {
+            fullname,
+            userType,
+            collegename,
+            position,
+            currentPositions,
+            currentRoles,
+            year,
+            cgpa,
+            testimonials,
+            skills,
+            portfolioUrl,
+            linkedinUrl,
+        } = req.body;
 
-        if (!fullname || !userType || !currentPositions || !req.files || !req.files.image) {
+        if (!fullname || !userType || !currentPositions || !currentRoles || !req.files || !req.files.image) {
 
             return res.status(400).json({ success: false, error: "Required fields and image are missing" });
         }
@@ -54,9 +67,10 @@ app.post("/upload", upload, async (req, res) => {
             return res.status(400).json({ success: false, error: "Invalid userType" });
         }
 
-        const positionsArray = Array.isArray(currentPositions) ? currentPositions : JSON.parse(currentPositions);
-        const testimonialsArray = Array.isArray(testimonials) ? testimonials : JSON.parse(testimonials);
-        const skillsArray = skills ? (Array.isArray(skills) ? skills : JSON.parse(skills)) : [];
+        const parsedCurrentPositions = currentPositions ? JSON.parse(currentPositions) : [];
+        const parsedCurrentRoles = currentRoles ? JSON.parse(currentRoles) : [];
+        const parsedTestimonials = testimonials ? JSON.parse(testimonials) : [];
+        const parsedSkills = skills ? JSON.parse(skills) : [];
 
         const imageBuffer = req.files.image[0].buffer;
         const imageName = req.files.image[0].originalname;
@@ -74,12 +88,21 @@ app.post("/upload", upload, async (req, res) => {
         const user = new User({
             fullname,
             userType,
+            collegename: userType === "college" ? collegename : undefined,
+            position: userType === "college" ? position : undefined,
+            currentPositions: parsedCurrentPositions,
+            currentRoles: parsedCurrentRoles,
             collegename: userType === "college" ? collegename : null,
-            currentPositions: positionsArray,
             imageUrl,
+            year: userType === "college" ? year : undefined,
+            cgpa: userType === "college" && cgpa ? parseFloat(cgpa) : undefined,
+            testimonials: parsedTestimonials,
             year: userType === "college" ? year : null,
-            testimonials: testimonialsArray,
+            testimonials: parsedTestimonials,
             certificateUrls,
+            skills: parsedSkills,
+            portfolioUrl,
+            linkedinUrl,
             skills: userType === "job" || userType === "development" ? skillsArray : null,
         });
 
@@ -121,8 +144,12 @@ app.get("/members/college", async (req, res) => {
         const formattedUsers = collegeUsers.map(user => ({
             fullname: user.fullname,
             collegename: user.collegename,
+            position: user.position,
             year: user.year,
+            testimonials: user.testimonials,
+            cgpa: user.cgpa,
             imageUrl: user.imageUrl,
+            linkedinUrl: user.linkedinUrl,
         }));
         res.json(formattedUsers);
     } catch (err) {
@@ -193,7 +220,7 @@ app.post("/achievements", upload, async (req, res) => {
         const imageUrls = [];
         for (const file of req.files.image) {
             const { buffer, originalname } = file;
-            const { objectUrl } = await s3UploadV3(buffer, originalname); 
+            const { objectUrl } = await s3UploadV3(buffer, originalname);
             imageUrls.push(objectUrl);
         }
 
@@ -261,7 +288,7 @@ app.get("/members/:slug", async (req, res) => {
             imageUrl: member.imageUrl,
             userType: member.userType,
             currentPositions: member.currentPositions || [],
-            currentRoles: roles, 
+            currentRoles: roles,
             skills: member.skills || [],
             testimonials: member.testimonials || [],
             certificateUrls: member.certificateUrls || [],
@@ -271,7 +298,7 @@ app.get("/members/:slug", async (req, res) => {
             cgpa: member.cgpa,
             portfolioUrl: member.portfolioUrl,
             linkedinUrl: member.linkedinUrl,
-            quotes: Array.isArray(member.quotes) ? member.quotes : []
+            //  quotes: Array.isArray(member.quotes) ? member.quotes : []
         };
 
         res.json({ success: true, data: formattedResponse });
@@ -289,9 +316,9 @@ app.get("/members/:slug", async (req, res) => {
 app.delete("/members/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         const member = await User.findById(id);
-        
+
         if (!member) {
             return res.status(404).json({
                 success: false,
@@ -319,7 +346,7 @@ app.put("/members/:slug", upload, async (req, res) => {
     try {
         const { slug } = req.params;
         const members = await User.find({});
-        
+
         const member = members.find(m => {
             const memberSlug = m.fullname.toLowerCase()
                 .replace(/\s+/g, "-")
@@ -338,7 +365,7 @@ app.put("/members/:slug", upload, async (req, res) => {
 
         const updates = {};
         const fields = [
-            'fullname', 'userType', 'collegename', 'position', 'year', 
+            'fullname', 'userType', 'collegename', 'position', 'year',
             'cgpa', 'portfolioUrl', 'linkedinUrl'
         ];
 
@@ -393,7 +420,7 @@ app.put("/achievements/:id", upload, async (req, res) => {
         const { name, date } = req.body;
 
         const updates = { name, date };
-        
+
         if (req.files && req.files.image) {
             const imageUrls = [];
             for (const file of req.files.image) {
@@ -425,7 +452,7 @@ app.delete("/achievements/:id", async (req, res) => {
     try {
         const { id } = req.params;
         const achievement = await Achievement.findByIdAndDelete(id);
-        
+
         if (!achievement) {
             return res.status(404).json({ success: false, error: "Achievement not found" });
         }
