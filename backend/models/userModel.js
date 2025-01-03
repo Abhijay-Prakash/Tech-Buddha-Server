@@ -20,11 +20,11 @@ const userSchema = new mongoose.Schema({
     },
     imageUrl: {
         type: String,
-        default: null,
+        required: true,
     },
     year: {
-        type: [String],
-        default: [],
+        type: String,
+        default: null,
     },
     testimonials: {
         type: [String],
@@ -34,11 +34,36 @@ const userSchema = new mongoose.Schema({
         type: [String],
         default: [],
     },
-    
     skills: {
         type: [String],
         default: [],
     },
+    currentRoles: {
+        type: [String],
+        default: [],
+    },
+    position: {
+        type: String,
+        default: null,
+    },
+    cgpa: {
+        type: Number,
+        default: null,
+    },
+    portfolioUrl: {
+        type: String,
+        default: null,
+    },
+    linkedinUrl: {
+        type: String,
+        default: null,
+    },
+    quotes: {
+        type: [String],
+        default: [],
+    }
+}, {
+    timestamps: true 
 });
 
 const User = mongoose.model("User", userSchema);
