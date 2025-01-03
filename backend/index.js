@@ -81,11 +81,12 @@ app.post("/upload", upload, async (req, res) => {
             }
         }
 
+       
         const user = new User({
             fullname,
             userType,
             imageUrl,
-            linkedinUrl,
+            linkedinUrl: linkedinUrl || null,  
             quotes: quotesArray,
             certificateUrls,
             collegename: userType === "college" ? collegename : null,
