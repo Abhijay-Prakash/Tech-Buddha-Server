@@ -8,55 +8,65 @@ const connectToMongoDB = require("./connectToMongoDB");
 const User = require('./models/userModel');
 const Achievement = require('./models/achievementsModel');
 
-
-
 const app = express();
 app.use(express.json());
 
-
-
 app.use(cors({
     origin: [
-       'http://localhost:5173', 
-       'https://tech-buddhaa.vercel.app', 
-       'https://www.lenienttree.com'
-   ], 
-   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-   credentials: true,
+        'http://localhost:5173',
+        'https://tech-buddhaa.vercel.app',
+        'https://www.lenienttree.com'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
 }));
 
 connectToMongoDB();
 
-
-
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 },
+    limits: { fileSize: 10 * 1024 * 1024 }, 
 }).fields([
     { name: "image", maxCount: 10 },
     { name: "certificates", maxCount: 10 },
 ]);
 
-
-
 app.post("/upload", upload, async (req, res) => {
     try {
+        const {
+            fullname,
+            userType,
+            collegename,
+            currentPositions,
+            year,
+            testimonials,
+            skills,
+            position,
+            cgpa,
+            portfolioUrl,
+            linkedinUrl,
+            quotes
+        } = req.body;
 
-        const { fullname, userType, collegename, currentPositions, year, testimonials, skills } = req.body;
-
-        if (!fullname || !userType || !currentPositions || !req.files || !req.files.image) {
-
-            return res.status(400).json({ success: false, error: "Required fields and image are missing" });
+        if (!fullname || !userType || !req.files || !req.files.image) {
+            return res.status(400).json({
+                success: false,
+                error: "Required fields and image are missing"
+            });
         }
 
         if (!["college", "job", "marketing", "development"].includes(userType)) {
-            return res.status(400).json({ success: false, error: "Invalid userType" });
+            return res.status(400).json({
+                success: false,
+                error: "Invalid userType"
+            });
         }
 
-        const positionsArray = Array.isArray(currentPositions) ? currentPositions : JSON.parse(currentPositions);
-        const testimonialsArray = Array.isArray(testimonials) ? testimonials : JSON.parse(testimonials);
+        const positionsArray = currentPositions ? (Array.isArray(currentPositions) ? currentPositions : JSON.parse(currentPositions)) : [];
+        const testimonialsArray = testimonials ? (Array.isArray(testimonials) ? testimonials : JSON.parse(testimonials)) : [];
         const skillsArray = skills ? (Array.isArray(skills) ? skills : JSON.parse(skills)) : [];
+        const quotesArray = quotes ? (Array.isArray(quotes) ? quotes : JSON.parse(quotes)) : [];
 
         const imageBuffer = req.files.image[0].buffer;
         const imageName = req.files.image[0].originalname;
@@ -74,36 +84,36 @@ app.post("/upload", upload, async (req, res) => {
         const user = new User({
             fullname,
             userType,
-            collegename: userType === "college" ? collegename : null,
-            currentPositions: positionsArray,
             imageUrl,
-            year: userType === "college" ? year : null,
-            testimonials: testimonialsArray,
+            linkedinUrl,
+            quotes: quotesArray,
             certificateUrls,
-            skills: userType === "job" || userType === "development" ? skillsArray : null,
+            collegename: userType === "college" ? collegename : null,
+            year: userType === "college" ? year : null,
+            cgpa: userType === "college" && cgpa ? parseFloat(cgpa) : null,
+            position: userType === "college" ? position : null,
+            currentPositions: ["job", "development"].includes(userType) ? positionsArray : [],
+            skills: ["job", "development"].includes(userType) ? skillsArray : [],
+            testimonials: userType === "marketing" ? testimonialsArray : [],
+            portfolioUrl: ["marketing", "development"].includes(userType) ? portfolioUrl : null,
+            currentRoles: positionsArray,
         });
 
         const savedUser = await user.save();
-        res.status(201).json({ success: true, message: "Data uploaded successfully", data: savedUser });
+        res.status(201).json({
+            success: true,
+            message: "Data uploaded successfully",
+            data: savedUser
+        });
     } catch (err) {
         console.error("Error:", err);
-        res.status(500).json({ success: false, error: "Internal Server Error" });
+        res.status(500).json({
+            success: false,
+            error: "Internal Server Error"
+        });
     }
 });
 
-// app.get("/members", async (req, res) => {
-//     try {
-//         const users = await User.find({});
-//         res.json(users);
-//     } catch (err) {
-//         console.error("Error fetching members:", err);
-//         res.status(500).json({ success: false, error: "Internal Server Error" });
-//     }
-// });
-
-
-
-// Fetch all members
 app.get("/members", async (req, res) => {
     try {
         const users = await User.find({});
@@ -114,7 +124,6 @@ app.get("/members", async (req, res) => {
     }
 });
 
-// Fetch college members
 app.get("/members/college", async (req, res) => {
     try {
         const collegeUsers = await User.find({ userType: "college" });
@@ -123,6 +132,8 @@ app.get("/members/college", async (req, res) => {
             collegename: user.collegename,
             year: user.year,
             imageUrl: user.imageUrl,
+            linkedinUrl: user.linkedinUrl,
+            quotes: user.quotes
         }));
         res.json(formattedUsers);
     } catch (err) {
@@ -131,7 +142,6 @@ app.get("/members/college", async (req, res) => {
     }
 });
 
-// Fetch job members
 app.get("/members/job", async (req, res) => {
     try {
         const jobUsers = await User.find({ userType: "job" });
@@ -140,6 +150,8 @@ app.get("/members/job", async (req, res) => {
             currentPositions: user.currentPositions,
             skills: user.skills,
             imageUrl: user.imageUrl,
+            linkedinUrl: user.linkedinUrl,
+            quotes: user.quotes
         }));
         res.json(formattedUsers);
     } catch (err) {
@@ -148,7 +160,6 @@ app.get("/members/job", async (req, res) => {
     }
 });
 
-// Fetch marketing members
 app.get("/members/marketing", async (req, res) => {
     try {
         const marketingUsers = await User.find({ userType: "marketing" });
@@ -156,6 +167,9 @@ app.get("/members/marketing", async (req, res) => {
             fullname: user.fullname,
             testimonials: user.testimonials,
             imageUrl: user.imageUrl,
+            linkedinUrl: user.linkedinUrl,
+            quotes: user.quotes,
+            portfolioUrl: user.portfolioUrl
         }));
         res.json(formattedUsers);
     } catch (err) {
@@ -164,7 +178,7 @@ app.get("/members/marketing", async (req, res) => {
     }
 });
 
-// Fetch development members
+
 app.get("/members/development", async (req, res) => {
     try {
         const developmentUsers = await User.find({ userType: "development" });
@@ -173,6 +187,9 @@ app.get("/members/development", async (req, res) => {
             skills: user.skills,
             certificateUrls: user.certificateUrls,
             imageUrl: user.imageUrl,
+            linkedinUrl: user.linkedinUrl,
+            quotes: user.quotes,
+            portfolioUrl: user.portfolioUrl
         }));
         res.json(formattedUsers);
     } catch (err) {
@@ -180,48 +197,6 @@ app.get("/members/development", async (req, res) => {
         res.status(500).json({ success: false, error: "Internal Server Error" });
     }
 });
-
-
-app.post("/achievements", upload, async (req, res) => {
-    try {
-        const { name, date } = req.body;
-
-        if (!name || !req.files || !req.files.image) {
-            return res.status(400).json({ success: false, error: "Name and images are required" });
-        }
-
-        const imageUrls = [];
-        for (const file of req.files.image) {
-            const { buffer, originalname } = file;
-            const { objectUrl } = await s3UploadV3(buffer, originalname); 
-            imageUrls.push(objectUrl);
-        }
-
-        const achievement = new Achievement({
-            name,
-            imageUrls,
-            date
-        });
-
-        const savedAchievement = await achievement.save();
-        res.status(201).json({ success: true, message: "Achievement added successfully", data: savedAchievement });
-    } catch (err) {
-        console.error("Error adding achievement:", err);
-        res.status(500).json({ success: false, error: "Internal Server Error" });
-    }
-});
-
-
-app.get("/achievements", async (req, res) => {
-    try {
-        const achievements = await Achievement.find({});
-        res.status(200).json({ success: true, data: achievements });
-    } catch (err) {
-        console.error("Error fetching achievements:", err);
-        res.status(500).json({ success: false, error: "Internal Server Error" });
-    }
-});
-
 
 app.get("/members/:slug", async (req, res) => {
     try {
@@ -234,7 +209,6 @@ app.get("/members/:slug", async (req, res) => {
                 .replace(/\./g, "")
                 .normalize("NFD")
                 .replace(/[\u0300-\u036f]/g, "");
-
             return memberSlug === slug;
         });
 
@@ -245,23 +219,12 @@ app.get("/members/:slug", async (req, res) => {
             });
         }
 
-        let roles = [];
-        if (member.currentRoles && Array.isArray(member.currentRoles)) {
-            roles = member.currentRoles;
-        } else if (member.currentRoles) {
-            try {
-                roles = JSON.parse(member.currentRoles);
-            } catch (e) {
-                roles = [member.currentRoles];
-            }
-        }
-
         const formattedResponse = {
             fullname: member.fullname,
             imageUrl: member.imageUrl,
             userType: member.userType,
             currentPositions: member.currentPositions || [],
-            currentRoles: roles, 
+            currentRoles: member.currentRoles || [],
             skills: member.skills || [],
             testimonials: member.testimonials || [],
             certificateUrls: member.certificateUrls || [],
@@ -271,7 +234,7 @@ app.get("/members/:slug", async (req, res) => {
             cgpa: member.cgpa,
             portfolioUrl: member.portfolioUrl,
             linkedinUrl: member.linkedinUrl,
-            quotes: Array.isArray(member.quotes) ? member.quotes : []
+            quotes: member.quotes || []
         };
 
         res.json({ success: true, data: formattedResponse });
@@ -286,12 +249,12 @@ app.get("/members/:slug", async (req, res) => {
 
 
 
+
 app.delete("/members/:id", async (req, res) => {
     try {
         const { id } = req.params;
         
         const member = await User.findById(id);
-        
         if (!member) {
             return res.status(404).json({
                 success: false,
@@ -300,7 +263,6 @@ app.delete("/members/:id", async (req, res) => {
         }
 
         await User.findByIdAndDelete(id);
-
         res.json({
             success: true,
             message: "User deleted successfully"
@@ -313,6 +275,7 @@ app.delete("/members/:id", async (req, res) => {
         });
     }
 });
+
 
 
 app.put("/members/:slug", upload, async (req, res) => {
@@ -383,7 +346,6 @@ app.put("/members/:slug", upload, async (req, res) => {
         });
     }
 });
-
 
 
 
