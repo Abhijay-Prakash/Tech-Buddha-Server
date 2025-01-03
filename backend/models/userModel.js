@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-// Connect to MongoDB
 mongoose.connect(process.env.MONGO_DB_URI)
     .then(() => console.log("Connected to MongoDB"))
     .catch(err => {
@@ -8,7 +7,6 @@ mongoose.connect(process.env.MONGO_DB_URI)
         process.exit(1);
     });
 
-// Define the User schema
 const userSchema = new mongoose.Schema({
     fullname: { type: String, required: true },
     userType: {
@@ -32,6 +30,10 @@ const userSchema = new mongoose.Schema({
     skills: [String],
     portfolioUrl: String,
     linkedinUrl: String,
+    quotes: [{
+        quote: String,
+        author: String
+    }]
 });
 
 

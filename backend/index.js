@@ -42,7 +42,6 @@ const upload = multer({
 
 app.post("/upload", upload, async (req, res) => {
     try {
-
         const {
             fullname,
             userType,
@@ -56,10 +55,10 @@ app.post("/upload", upload, async (req, res) => {
             skills,
             portfolioUrl,
             linkedinUrl,
+            quotes,
         } = req.body;
 
         if (!fullname || !userType || !currentPositions || !currentRoles || !req.files || !req.files.image) {
-
             return res.status(400).json({ success: false, error: "Required fields and image are missing" });
         }
 
@@ -71,6 +70,7 @@ app.post("/upload", upload, async (req, res) => {
         const parsedCurrentRoles = currentRoles ? JSON.parse(currentRoles) : [];
         const parsedTestimonials = testimonials ? JSON.parse(testimonials) : [];
         const parsedSkills = skills ? JSON.parse(skills) : [];
+        const parsedQuotes = quotes ? JSON.parse(quotes) : [];
 
         const imageBuffer = req.files.image[0].buffer;
         const imageName = req.files.image[0].originalname;
@@ -92,18 +92,15 @@ app.post("/upload", upload, async (req, res) => {
             position: userType === "college" ? position : undefined,
             currentPositions: parsedCurrentPositions,
             currentRoles: parsedCurrentRoles,
-            collegename: userType === "college" ? collegename : null,
             imageUrl,
             year: userType === "college" ? year : undefined,
             cgpa: userType === "college" && cgpa ? parseFloat(cgpa) : undefined,
-            testimonials: parsedTestimonials,
-            year: userType === "college" ? year : null,
             testimonials: parsedTestimonials,
             certificateUrls,
             skills: parsedSkills,
             portfolioUrl,
             linkedinUrl,
-            skills: userType === "job" || userType === "development" ? skillsArray : null,
+            quotes: parsedQuotes,
         });
 
         const savedUser = await user.save();
@@ -126,7 +123,6 @@ app.post("/upload", upload, async (req, res) => {
 
 
 
-// Fetch all members
 app.get("/members", async (req, res) => {
     try {
         const users = await User.find({});
@@ -137,7 +133,6 @@ app.get("/members", async (req, res) => {
     }
 });
 
-// Fetch college members
 app.get("/members/college", async (req, res) => {
     try {
         const collegeUsers = await User.find({ userType: "college" });
@@ -158,7 +153,6 @@ app.get("/members/college", async (req, res) => {
     }
 });
 
-// Fetch job members
 app.get("/members/job", async (req, res) => {
     try {
         const jobUsers = await User.find({ userType: "job" });
@@ -175,7 +169,6 @@ app.get("/members/job", async (req, res) => {
     }
 });
 
-// Fetch marketing members
 app.get("/members/marketing", async (req, res) => {
     try {
         const marketingUsers = await User.find({ userType: "marketing" });
@@ -191,7 +184,6 @@ app.get("/members/marketing", async (req, res) => {
     }
 });
 
-// Fetch development members
 app.get("/members/development", async (req, res) => {
     try {
         const developmentUsers = await User.find({ userType: "development" });
@@ -237,7 +229,6 @@ app.post("/achievements", upload, async (req, res) => {
         res.status(500).json({ success: false, error: "Internal Server Error" });
     }
 });
-
 
 app.get("/achievements", async (req, res) => {
     try {
@@ -298,7 +289,7 @@ app.get("/members/:slug", async (req, res) => {
             cgpa: member.cgpa,
             portfolioUrl: member.portfolioUrl,
             linkedinUrl: member.linkedinUrl,
-            //  quotes: Array.isArray(member.quotes) ? member.quotes : []
+            quotes: Array.isArray(member.quotes) ? member.quotes : [],
         };
 
         res.json({ success: true, data: formattedResponse });
@@ -310,7 +301,6 @@ app.get("/members/:slug", async (req, res) => {
         });
     }
 });
-
 
 
 app.delete("/members/:id", async (req, res) => {
@@ -345,8 +335,8 @@ app.delete("/members/:id", async (req, res) => {
 app.put("/members/:slug", upload, async (req, res) => {
     try {
         const { slug } = req.params;
-        const members = await User.find({});
 
+        const members = await User.find({});
         const member = members.find(m => {
             const memberSlug = m.fullname.toLowerCase()
                 .replace(/\s+/g, "-")
@@ -389,6 +379,23 @@ app.put("/members/:slug", upload, async (req, res) => {
         }
         if (req.body.quotes) {
             updates.quotes = JSON.parse(req.body.quotes);
+        }
+
+        if (req.files && req.files.image) {
+            const imageBuffer = req.files.image[0].buffer;
+            const imageName = req.files.image[0].originalname;
+            const { objectUrl: imageUrl } = await s3UploadV3(imageBuffer, imageName);
+            updates.imageUrl = imageUrl;
+        }
+
+        if (req.files && req.files.certificates) {
+            const certificateUrls = [];
+            for (const file of req.files.certificates) {
+                const { buffer, originalname } = file;
+                const { objectUrl } = await s3UploadV3(buffer, originalname);
+                certificateUrls.push(objectUrl);
+            }
+            updates.certificateUrls = certificateUrls;
         }
 
         const updatedUser = await User.findByIdAndUpdate(
