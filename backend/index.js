@@ -36,6 +36,8 @@ const upload = multer({
 }).fields([
     { name: "image", maxCount: 10 },
     { name: "certificates", maxCount: 10 },
+    { name: "10th", maxCount: 1 },
+    { name: "12th", maxCount: 1 },
 ]);
 
 
@@ -85,6 +87,10 @@ app.post("/upload", upload, async (req, res) => {
             }
         }
 
+
+        const tenthCertificateUrl = req.files['10th'] ? await s3UploadV3(req.files['10th'][0].buffer, req.files['10th'][0].originalname).objectUrl : null;
+        const twelfthCertificateUrl = req.files['12th'] ? await s3UploadV3(req.files['12th'][0].buffer, req.files['12th'][0].originalname).objectUrl : null;
+
         const user = new User({
             fullname,
             userType,
@@ -101,6 +107,8 @@ app.post("/upload", upload, async (req, res) => {
             portfolioUrl,
             linkedinUrl,
             quotes: parsedQuotes,
+            _10thCertificateUrl: tenthCertificateUrl,
+            _12thCertificateUrl: twelfthCertificateUrl
         });
 
         const savedUser = await user.save();
