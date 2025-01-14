@@ -7,6 +7,7 @@ const cors = require('cors');
 const connectToMongoDB = require("./connectToMongoDB");
 const User = require('./models/userModel');
 const Achievement = require('./models/achievementsModel');
+const { College } = require("./models/college");
 
 
 
@@ -427,6 +428,56 @@ app.put("/members/:slug", upload, async (req, res) => {
 });
 
 
+app.put("/addCollege", async (req, res) => {
+    try {
+        const { collegename, imageUrl, linkedinUrl, projects } = req.body;
+
+        if(!collegename){
+            return res.status(400).json({
+                success: false,
+                message: "College Name is required"
+            });
+        }
+        const existingCollege = await College.findOne({ collegename });
+
+        if (existingCollege) {
+            return res.status(409).json({
+                success: false,
+                message: "College already exists"
+            });
+        }
+
+        const newCollege = new College({
+            collegename,
+            imageUrl,
+            linkedinUrl,
+            projects
+        });
+        await newCollege.save();
+
+        res.status(201).json({ 
+            success: true, 
+            message: "College added successfully" 
+        });
+
+    } catch (err) {
+        console.error("Error adding college:", err);
+        res.status(500).json({ 
+            success: false, 
+            error: "Internal Server Error" 
+        });
+    }
+});
+
+app.get("/colleges", async(req,res)=>{
+    try {
+        const colleges = await College.find({});
+        res.json(colleges);
+    } catch (err) {
+        console.error("Error fetching colleges:", err);
+        res.status(500).json({ success: false, error: "Internal Server Error" });
+    }
+})
 
 
 app.put("/achievements/:id", upload, async (req, res) => {
