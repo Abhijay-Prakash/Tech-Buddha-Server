@@ -150,11 +150,11 @@ app.post("/add-colleges", async (req, res) => {
         for (const user of users) {
             const collegename = user.collegename;
             if (collegename) {
-                const existingCollege = await College.findOne({ name: collegename });
+                const existingCollege = await College.findOne({ collegename: collegename });
 
                 if (!existingCollege) {
                     const newCollege = new College({
-                        name: collegename
+                        collegename: collegename
                     });
 
                     await newCollege.save();
