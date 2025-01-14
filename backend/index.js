@@ -168,7 +168,7 @@ app.post("/add-colleges", async (req, res) => {
         res.status(200).json({ success: true, message: "Colleges added/checked successfully." });
     } catch (err) {
         console.error("Error adding colleges:", err);
-        res.status(500).json({ success: false, error: "Internal Server Error" });
+        res.status(500).json({ success: false, error: "Internal Server Error" ,err});
     }
 });
 
