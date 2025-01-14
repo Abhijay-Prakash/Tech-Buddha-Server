@@ -142,6 +142,37 @@ app.get("/members", async (req, res) => {
     }
 });
 
+
+app.post("/add-colleges", async (req, res) => {
+    try {
+        const users = await User.find({ userType: "college" });
+
+        for (const user of users) {
+            const collegename = user.collegename;
+            if (collegename) {
+                const existingCollege = await College.findOne({ name: collegename });
+
+                if (!existingCollege) {
+                    const newCollege = new College({
+                        name: collegename
+                    });
+
+                    await newCollege.save();
+                    console.log(`Added new college: ${collegename}`);
+                } else {
+                    console.log(`College already exists: ${collegename}`);
+                }
+            }
+        }
+
+        res.status(200).json({ success: true, message: "Colleges added/checked successfully." });
+    } catch (err) {
+        console.error("Error adding colleges:", err);
+        res.status(500).json({ success: false, error: "Internal Server Error" });
+    }
+});
+
+
 app.get("/members/college", async (req, res) => {
     try {
         const collegeUsers = await User.find({ userType: "college" });
