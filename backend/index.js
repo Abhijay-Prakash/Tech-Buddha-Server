@@ -480,6 +480,77 @@ app.get("/colleges", async(req,res)=>{
 })
 
 
+
+
+app.post("/addProject", async (req, res) => {
+    try {
+        const { collegename, project } = req.body;
+
+        if (!collegename || !project || !project.title || !project.description) {
+            return res.status(400).json({
+                success: false,
+                message: "College name and project details (title, description) are required",
+            });
+        }
+
+        const college = await College.findOne({ collegename });
+        if (!college) {
+            return res.status(404).json({
+                success: false,
+                message: "College not found",
+            });
+        }
+        college.projects.push(project);
+        await college.save();
+        res.status(200).json({
+            success: true,
+            message: "Project added successfully",
+            updatedCollege: college,
+        });
+
+    } catch (err) {
+        console.error("Error adding project:", err);
+        res.status(500).json({
+            success: false,
+            error: "Internal Server Error",
+        });
+    }
+});
+
+app.get("/getProjects", async (req, res) => {
+    try {
+        const { collegename } = req.query;
+
+        if (!collegename) {
+            return res.status(400).json({
+                success: false,
+                message: "College name is required",
+            });
+        }
+
+        const college = await College.findOne({ collegename });
+        if (!college) {
+            return res.status(404).json({
+                success: false,
+                message: "College not found",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            projects: college.projects,
+        });
+
+    } catch (err) {
+        console.error("Error getting projects:", err);
+        res.status(500).json({
+            success: false,
+            error: "Internal Server Error",
+        });
+    }
+});
+
+
 app.put("/achievements/:id", upload, async (req, res) => {
     try {
         const { id } = req.params;
